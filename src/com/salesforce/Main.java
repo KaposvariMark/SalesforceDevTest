@@ -1,5 +1,7 @@
 package com.salesforce;
 
+import com.salesforce.entities.Account;
+import com.salesforce.entities.Contact;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -9,6 +11,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -23,60 +26,154 @@ public class Main {
     public static final String LIST_ACCOUNTS_URL = "https://artemis-innovations-gmbh--candidat.my.salesforce.com//services/data/v53.0/sobjects/Account";
 
     private static String bearerToken = "";
+    private static Menu menu;
+
+    private static final ArrayList<Account> Accounts = new ArrayList<>();
+    private static final ArrayList<Contact> Contacts = new ArrayList<>();
 
     public static void main(String[] args) {
+        int selectedOption;
 
-        if(!livenessCheck()) return;
-
-        try {
-            bearerToken = setUpAuthorization();
-        } catch (Exception e){
-            System.out.println("Authorization failed!");
-            e.printStackTrace();
+        System.out.println("----------INIT---------");
+        if(!init()){
+            System.out.println("Something went wrong!");
+            return;
         }
 
-        if(!bearerToken.isEmpty()){
+        System.out.println("----------INFO---------");
+        System.out.println("You can exit with -1");
+
+        do {
+            selectedOption = menu.printMainOptions();
+            switch (selectedOption){
+                case 1:
+                    for (Account acc : Accounts) {
+                        System.out.println("\n" + acc.getName() + "\nPhone number: " + acc.getPhone());
+                    }
+                    break;
+                case 2:
+                    for (Contact con : Contacts) {
+                        System.out.println("\n" + con.getFirstName() + " " + con.getLastName());
+                    }
+                    break;
+                case 3:
+                    System.out.println("option 3");
+                    break;
+                case 4:
+                    System.out.println("Goodbye!");
+                case 5: break;
+                default:
+                    System.out.println("Please chose a number from the aligning options");
+            }
+        } while (selectedOption != 4);
+    }
+
+    private static boolean init() {
+        if(livenessCheck()){
             try {
-                getAccounts(bearerToken);
-                getContacts(bearerToken);
+                bearerToken = setUpAuthorization();
             } catch (Exception e){
+                System.out.println("Authorization failed!");
                 e.printStackTrace();
             }
+        } else System.out.println("Liveness check failed, please try again later!");
+        if(bearerToken.isEmpty()) return false;
+        else {
+            try {
+                loadAccounts(bearerToken);
+                System.out.println("Loading accounts has finished!");
+                loadContacts(bearerToken);
+                System.out.println("Loading contacts has finished!");
+            } catch (Exception e){
+                System.out.println("Loading data has failed!");
+            }
         }
+        return true;
     }
 
-    private static void getContacts(String token) throws IOException {
+    private static void loadContacts(String token) throws IOException {
         HttpGet httpGet = new HttpGet(LIST_CONTACTS_URL);
-
         httpGet.setHeader("Authorization", "Bearer " + token );
         httpGet.setHeader("X-PrettyPrint", "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
-        System.out.println("Contacts check is done! Status code: " + response.getStatusLine().getStatusCode());
 
-        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        System.out.println(responseString);
+        String jsonText = EntityUtils.toString(response.getEntity());
+        JSONObject responseJson = new JSONObject(jsonText);
+        JSONArray responseArray =  responseJson.getJSONArray("recentItems");
+
+        for(int i = 0; i < responseArray.length(); i++){
+            JSONObject recentItem = responseArray.getJSONObject(i);
+
+            String id = recentItem.getString("Id");
+
+            Contact contact = getContactById(id, bearerToken);
+            Contacts.add(contact);
+        }
 
         client.close();
     }
 
-    private static void getAccounts(String token) throws IOException {
-        HttpGet httpGet = new HttpGet(LIST_ACCOUNTS_URL);
+    private static Contact getContactById(String id, String token) throws IOException {
+        HttpGet httpGet = new HttpGet(LIST_CONTACTS_URL + "/" + id);
 
-        //String credential = Base64.getEncoder().encodeToString(("Bearer " + token).getBytes("UTF-8"));
-        //httpGet.setHeader("Authorization", "Basic " + credential.substring(0, credential.length()-1));
         httpGet.setHeader("Authorization", "Bearer " + token );
         httpGet.setHeader("X-PrettyPrint", "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
-        System.out.println("Accounts check is done! Status code: " + response.getStatusLine().getStatusCode());
+        System.out.println("Contact by Id request is done! Status code: " + response.getStatusLine().getStatusCode());
 
-        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        System.out.println(responseString);
+        String jsonText = EntityUtils.toString(response.getEntity());
+        JSONObject responseJson = new JSONObject(jsonText);
+        String firstName = responseJson.getString("FirstName");
+        String lastName = responseJson.getString("LastName");
 
         client.close();
+        return new Contact(id, firstName, lastName);
+    }
+
+    private static void loadAccounts(String token) throws IOException {
+        HttpGet httpGet = new HttpGet(LIST_ACCOUNTS_URL);
+        httpGet.setHeader("Authorization", "Bearer " + token );
+        httpGet.setHeader("X-PrettyPrint", "1");
+
+        CloseableHttpClient client = HttpClientBuilder.create().build();
+        CloseableHttpResponse response = client.execute(httpGet);
+
+        String jsonText = EntityUtils.toString(response.getEntity());
+        JSONObject responseJson = new JSONObject(jsonText);
+        JSONArray responseArray =  responseJson.getJSONArray("recentItems");
+
+        for(int i = 0; i < responseArray.length(); i++){
+            JSONObject recentItem = responseArray.getJSONObject(i);
+
+            String id = recentItem.getString("Id");
+            String name = recentItem.getString("Name");
+
+            Account account = getAccountById(id, name,  bearerToken);
+            Accounts.add(account);
+        }
+        client.close();
+    }
+
+    private static Account getAccountById(String id, String name, String token) throws IOException {
+        HttpGet httpGet = new HttpGet(LIST_ACCOUNTS_URL + "/" + id);
+
+        httpGet.setHeader("Authorization", "Bearer " + token );
+        httpGet.setHeader("X-PrettyPrint", "1");
+
+        CloseableHttpClient client = HttpClientBuilder.create().build();
+        CloseableHttpResponse response = client.execute(httpGet);
+        System.out.println("Account by Id request is done! Status code: " + response.getStatusLine().getStatusCode());
+
+        String jsonText = EntityUtils.toString(response.getEntity());
+        JSONObject responseJson = new JSONObject(jsonText);
+        String phone = responseJson.getString("Phone");
+
+        client.close();
+        return new Account(id, name, phone);
     }
 
     public static String setUpAuthorization() throws IOException {
