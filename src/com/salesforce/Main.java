@@ -19,6 +19,8 @@ public class Main {
 
     public static final String AUTHORIZATION_API_URL = "https://artemis-innovations-gmbh--candidat.my.salesforce.com/services/oauth2/token";
     public static final String VERSIONS_API_URL = "https://artemis-innovations-gmbh--candidat.my.salesforce.com/services/data/";
+    public static final String LIST_CONTACTS_URL = "https://artemis-innovations-gmbh--candidat.my.salesforce.com//services/data/v53.0/sobjects/Contact";
+    public static final String LIST_ACCOUNTS_URL = "https://artemis-innovations-gmbh--candidat.my.salesforce.com//services/data/v53.0/sobjects/Account";
 
     private static String bearerToken = "";
 
@@ -33,7 +35,48 @@ public class Main {
             e.printStackTrace();
         }
 
-        System.out.println(bearerToken);
+        if(!bearerToken.isEmpty()){
+            try {
+                getAccounts(bearerToken);
+                getContacts(bearerToken);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void getContacts(String token) throws IOException {
+        HttpGet httpGet = new HttpGet(LIST_CONTACTS_URL);
+
+        httpGet.setHeader("Authorization", "Bearer " + token );
+        httpGet.setHeader("X-PrettyPrint", "1");
+
+        CloseableHttpClient client = HttpClientBuilder.create().build();
+        CloseableHttpResponse response = client.execute(httpGet);
+        System.out.println("Contacts check is done! Status code: " + response.getStatusLine().getStatusCode());
+
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        System.out.println(responseString);
+
+        client.close();
+    }
+
+    private static void getAccounts(String token) throws IOException {
+        HttpGet httpGet = new HttpGet(LIST_ACCOUNTS_URL);
+
+        //String credential = Base64.getEncoder().encodeToString(("Bearer " + token).getBytes("UTF-8"));
+        //httpGet.setHeader("Authorization", "Basic " + credential.substring(0, credential.length()-1));
+        httpGet.setHeader("Authorization", "Bearer " + token );
+        httpGet.setHeader("X-PrettyPrint", "1");
+
+        CloseableHttpClient client = HttpClientBuilder.create().build();
+        CloseableHttpResponse response = client.execute(httpGet);
+        System.out.println("Accounts check is done! Status code: " + response.getStatusLine().getStatusCode());
+
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        System.out.println(responseString);
+
+        client.close();
     }
 
     public static String setUpAuthorization() throws IOException {
