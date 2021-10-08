@@ -4,37 +4,25 @@ public class Contact {
 
     private String id;
 
-    private String name;
+    private String firstName;
 
-    private String phone;
+    private String lastName;
 
-    public Contact(String id, String name, String phone) {
+    public Contact(String id, String firstName, String lastName) {
         this.id = id;
-        this.name = name;
-        this.phone = phone;
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
 
     public String getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public String getLastName() {
+        return lastName;
     }
 }
