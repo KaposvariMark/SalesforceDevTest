@@ -101,13 +101,12 @@ public class Main {
         for(Contact con : Contacts){
             if(account.getId().equals(con.getAccountID())) System.out.println(con.getFirstName() + " " + con.getLastName());
         }
-        System.out.println("\n");
     }
 
     private static void loadContacts(String token) throws IOException {
         HttpGet httpGet = new HttpGet(LIST_CONTACTS_URL);
-        httpGet.setHeader("Authorization", "Bearer " + token);
-        httpGet.setHeader("X-PrettyPrint", "1");
+        httpGet.setHeader(HttpParameters.AUTHORIZATION, HttpParameters.BEARER + token );
+        httpGet.setHeader(HttpParameters.X_PRETTYPRINT, "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
@@ -130,9 +129,8 @@ public class Main {
 
     private static Contact getContactById(String id, String token) throws IOException {
         HttpGet httpGet = new HttpGet(LIST_CONTACTS_URL + "/" + id);
-
-        httpGet.setHeader("Authorization", "Bearer " + token );
-        httpGet.setHeader("X-PrettyPrint", "1");
+        httpGet.setHeader(HttpParameters.AUTHORIZATION, HttpParameters.BEARER + token );
+        httpGet.setHeader(HttpParameters.X_PRETTYPRINT, "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
@@ -150,8 +148,8 @@ public class Main {
 
     private static void loadAccounts(String token) throws IOException {
         HttpGet httpGet = new HttpGet(LIST_ACCOUNTS_URL);
-        httpGet.setHeader("Authorization", "Bearer " + token );
-        httpGet.setHeader("X-PrettyPrint", "1");
+        httpGet.setHeader(HttpParameters.AUTHORIZATION, HttpParameters.BEARER + token );
+        httpGet.setHeader(HttpParameters.X_PRETTYPRINT, "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
@@ -174,9 +172,8 @@ public class Main {
 
     private static Account getAccountById(String id, String name, String token) throws IOException {
         HttpGet httpGet = new HttpGet(LIST_ACCOUNTS_URL + "/" + id);
-
-        httpGet.setHeader("Authorization", "Bearer " + token );
-        httpGet.setHeader("X-PrettyPrint", "1");
+        httpGet.setHeader(HttpParameters.AUTHORIZATION, HttpParameters.BEARER + token );
+        httpGet.setHeader(HttpParameters.X_PRETTYPRINT, "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
@@ -191,19 +188,19 @@ public class Main {
     }
 
     public static String setUpAuthorization() throws IOException {
-
         CloseableHttpClient client = HttpClientBuilder.create().build();
         HttpPost httpPost = new HttpPost(AUTHORIZATION_API_URL);
 
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("grant_type", "password"));
-        params.add(new BasicNameValuePair("client_id", "3MVG9_I_oWkIqLrlI5LkNC2hvXlqecJgiwYW3fqXeJkVPoxDSVHhLZbTQCPQUlNK5AzAgMCSwnCRLZe4d_08s"));
-        params.add(new BasicNameValuePair("client_secret", "A78E9BAE7BD5CCB728104B39FCC8D1A54153840D8876E619470360BA14DF0DE6"));
-        params.add(new BasicNameValuePair("username", "candidat@artemis-innovations.de.candidat"));
-        params.add(new BasicNameValuePair("password", "ArtemisInno1!"));
+        params.add(new BasicNameValuePair(HttpParameters.GRANT_TYPE, HttpParameters.PASSWORD));
+        params.add(new BasicNameValuePair(HttpParameters.CLIENT_ID, HttpParameters.ACTUAL_CLIENT_ID));
+        params.add(new BasicNameValuePair(HttpParameters.CLIENT_SECRET, HttpParameters.ACTUAL_CLIENT_SECRET));
+        params.add(new BasicNameValuePair(HttpParameters.USERNAME, HttpParameters.ACTUAL_USERNAME));
+        params.add(new BasicNameValuePair(HttpParameters.PASSWORD, HttpParameters.ACTUAL_PASSWORD));
 
         httpPost.setEntity(new UrlEncodedFormEntity(params));
         CloseableHttpResponse response = client.execute(httpPost);
+
         String jsonText = EntityUtils.toString(response.getEntity());
         JSONObject responseJson = new JSONObject(jsonText);
 
