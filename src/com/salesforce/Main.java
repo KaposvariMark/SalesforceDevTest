@@ -17,6 +17,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
 
@@ -26,13 +27,14 @@ public class Main {
     public static final String LIST_ACCOUNTS_URL = "https://artemis-innovations-gmbh--candidat.my.salesforce.com//services/data/v53.0/sobjects/Account";
 
     private static String bearerToken = "";
-    private static Menu menu;
 
     private static final ArrayList<Account> Accounts = new ArrayList<>();
     private static final ArrayList<Contact> Contacts = new ArrayList<>();
 
     public static void main(String[] args) {
         int selectedOption;
+        Menu menu = new Menu();
+        Scanner sc = new Scanner(System.in);
 
         System.out.println("----------INIT---------");
         if(!init()){
@@ -41,11 +43,12 @@ public class Main {
         }
 
         System.out.println("----------INFO---------");
-        System.out.println("You can exit with -1");
+        System.out.println("Please type in a number between 1-4");
 
         do {
-            selectedOption = menu.printMainOptions();
+            selectedOption = menu.printMainOptions(sc);
             switch (selectedOption){
+                case 0: break;
                 case 1:
                     for (Account acc : Accounts) {
                         System.out.println("\n" + acc.getName() + "\nPhone number: " + acc.getPhone());
@@ -57,15 +60,17 @@ public class Main {
                     }
                     break;
                 case 3:
-                    System.out.println("option 3");
+                    Account search = menu.printAccountsOptions(sc, Accounts);
+                    getContactsOfAccount(search);
                     break;
                 case 4:
                     System.out.println("Goodbye!");
-                case 5: break;
                 default:
                     System.out.println("Please chose a number from the aligning options");
             }
         } while (selectedOption != 4);
+
+        sc.close();
     }
 
     private static boolean init() {
@@ -91,9 +96,17 @@ public class Main {
         return true;
     }
 
+    private static void getContactsOfAccount(Account account){
+        System.out.println("\nContacts of this Account (" + account.getName() + "): ");
+        for(Contact con : Contacts){
+            if(account.getId().equals(con.getAccountID())) System.out.println(con.getFirstName() + " " + con.getLastName());
+        }
+        System.out.println("\n");
+    }
+
     private static void loadContacts(String token) throws IOException {
         HttpGet httpGet = new HttpGet(LIST_CONTACTS_URL);
-        httpGet.setHeader("Authorization", "Bearer " + token );
+        httpGet.setHeader("Authorization", "Bearer " + token);
         httpGet.setHeader("X-PrettyPrint", "1");
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
@@ -123,15 +136,16 @@ public class Main {
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
-        System.out.println("Contact by Id request is done! Status code: " + response.getStatusLine().getStatusCode());
+        System.out.println("Contact by Id: " + id + " request is done! Status code: " + response.getStatusLine().getStatusCode());
 
         String jsonText = EntityUtils.toString(response.getEntity());
         JSONObject responseJson = new JSONObject(jsonText);
         String firstName = responseJson.getString("FirstName");
         String lastName = responseJson.getString("LastName");
+        String accountID = responseJson.getString("AccountId");
 
         client.close();
-        return new Contact(id, firstName, lastName);
+        return new Contact(id, accountID, firstName, lastName);
     }
 
     private static void loadAccounts(String token) throws IOException {
@@ -166,7 +180,7 @@ public class Main {
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(httpGet);
-        System.out.println("Account by Id request is done! Status code: " + response.getStatusLine().getStatusCode());
+        System.out.println("Account by Id: " + id + "  request is done! Status code: " + response.getStatusLine().getStatusCode());
 
         String jsonText = EntityUtils.toString(response.getEntity());
         JSONObject responseJson = new JSONObject(jsonText);
